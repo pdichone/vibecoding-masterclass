@@ -1,0 +1,1108 @@
+{
+  "name": "Agents to Apps - RAG System-Final",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "43379dda-6dcb-4a86-a3fa-f5cbd5d0209f",
+              "name": "mimeType",
+              "value": "={{ $json.body.contentType }}",
+              "type": "string"
+            },
+            {
+              "id": "5465564e-06d7-4a3c-be2b-1040dfbbeb6f",
+              "name": "fileName",
+              "value": "={{ $json.body.filename }}",
+              "type": "string"
+            },
+            {
+              "id": "01d0edbd-0ad7-4c54-9c98-28c3350cc5f4",
+              "name": "userId",
+              "value": "={{ $json.body.userId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [60, 500],
+      "id": "86ad9b66-dc36-4d33-add8-5948c2c8d06e",
+      "name": "Extract Fields"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mimeType }}",
+                    "rightValue": "={{ \"application/pdf\"}}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a083a8a1-4cd4-4331-b761-53593230b465"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "49de5405-b67e-4fcf-9d4a-49b65df0f866",
+                    "leftValue": "={{ $json.mimeType }}",
+                    "rightValue": "={{ \"text/csv\"}}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9fae7677-b29d-45bb-b8fd-13cab88dfc01",
+                    "leftValue": "={{ $json.mimeType }}",
+                    "rightValue": "={{ \"text/plain\"}}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [280, 500],
+      "id": "55d8e713-461b-4959-8400-82fd6b8b9a89",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "id": "e41d0e74-53bb-42a3-ae06-596377c54116",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [500, 500],
+      "id": "d38ca771-9791-4b7a-b499-21bee902473a",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [500, 700],
+      "id": "80be05e9-e1c2-4cff-ac8e-8df6c0409b5d",
+      "name": "Extract from File2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// grab the original userId from your Extract Fields node\n// const userId = $node[\"Extract Fields\"].json[\"userId\"];\n\nconst userId = $('Extract Fields').first().json.body.userId\n// `items` is the array coming out of whichever extractor ran.\n// Turn each item’s json into one “content” array:\nconst content = items.map(i => i.json);\n\n// emit exactly one object with both userId + content \nreturn [{\n  json: {\n    userId,\n    content\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 500],
+      "id": "345f602e-7b62-4304-989c-3c45fcc43576",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [1436, 500],
+      "id": "7d796cf8-8213-4cb5-bf84-f7978c95adf5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [956, 300],
+      "id": "553a2629-72fb-44ce-afcb-a600228e20fe",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Xb7KEkzgEPVJkW9t",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [940, 520],
+      "id": "c1ff52cf-f33c-4796-96a0-fa5a71bae8c6",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "sVaN8v4g1kQcKrDV",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "userId",
+                "value": "={{ $json.userId  }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [1060, 522.5],
+      "id": "282fae67-0206-46b6-b903-209605ee0c81",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [1148, 720],
+      "id": "838c6caa-d840-45c5-9a0b-eebd4ef4331c",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [-160, -260],
+      "id": "a4d80656-11c8-43e4-837e-caa94e9e3549",
+      "name": "When chat message received",
+      "webhookId": "1725d20e-0309-441c-a47f-532497fdc962"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "02000d43-932c-4544-84ff-fa46b735afc6",
+              "name": "chatInput",
+              "value": "={{ $json?.chatInput || $json.body.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "c84de189-c016-4f5e-a679-2cb18795a1f2",
+              "name": "sessionId",
+              "value": "={{ $json?.sessionId || $json.body.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "31aa93f2-a022-41e0-a7e9-3cdb7e5d70b4",
+              "name": "userId",
+              "value": "={{ $json?.body?.userId || \"c1fd0520-13c8-406d-9f0b-1372286b13c5\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [60, -160],
+      "id": "c9082ad7-d104-48b9-9910-1a7f30f0a9d4",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful assistant who helps answer questions based on documents in your knowledge base.\n\nWhen answering questions:\n- Use the document retrieval tool to search for relevant information\n- Provide accurate answers based on the retrieved documents\n- If you cannot find relevant information in the documents, say \"I don't have information about that in the available documents\"\n- Always cite which documents you're referencing when possible\n- Be concise and helpful in your responses\n\nDo not make up information that isn't found in the retrieved documents."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [312, -360],
+      "id": "0f01da56-93f6-4c0c-b071-a5b222be8342",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [280, -140],
+      "id": "ad113db6-d42a-482b-b431-f71b57c29220",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "sVaN8v4g1kQcKrDV",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [400, -140],
+      "id": "2468d4e5-d901-4772-b38c-97bf6a579a50",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "OZG4GYl3yaMYgrb6",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "document_corpus",
+        "toolDescription": "document data from uploaded documents",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "userId",
+                "value": "={{ $('Edit Fields').item.json.userId }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [520, -137.5],
+      "id": "35e51c77-a216-4c90-b084-f42a64e273c6",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Xb7KEkzgEPVJkW9t",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [608, 60],
+      "id": "a4b44cb7-110f-4a1a-9e08-a4a90ae3ff0e",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "sVaN8v4g1kQcKrDV",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-160, -60],
+      "id": "c4046a89-7329-4c23-a20c-80a0c8e423d4",
+      "name": "ChatWebhook",
+      "webhookId": "5ed5eb94-bac1-4da6-b2f4-7d2de11ab93c"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [896, -160],
+      "id": "f39dc12a-cef6-4030-bdc0-01cbfa796f38",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fetch",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-160, 1260],
+      "id": "00f67ecc-fcb4-4eb0-992a-a3fa8c4bf10f",
+      "name": "YT-Webhook",
+      "webhookId": "53b08c10-fd33-4963-866a-02fa8fa98e63"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "05fc44f7-9c98-49d3-a546-3e2eed2ade51",
+              "name": "userId",
+              "value": "={{ $json.body.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "17d4ce93-5ad6-4712-9751-1f8aae6f8f47",
+              "name": "videoUrl",
+              "value": "={{ $json.body.videoUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [60, 1260],
+      "id": "79dad581-a044-4f5e-b106-efc671a09b99",
+      "name": "ExtractFields"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-transcript3.p.rapidapi.com/api/transcript-with-url",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.videoUrl }}"
+            },
+            {
+              "name": "flat_text",
+              "value": "true"
+            },
+            {
+              "name": "lang",
+              "value": "en"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-key",
+              "value": "add-your-rapidapi-key-here"
+            },
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-transcript3.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "videoUrl",
+              "value": "={{ $json.videoUrl }}"
+            },
+            {
+              "name": "userId",
+              "value": "={{ $json.userId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 1260],
+      "id": "6e5c38a9-62f0-4342-aff9-a72e5dcaf99f",
+      "name": "RapidAPI-HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7TgI8H5eOkxD9O9h",
+          "name": "YT-RapidAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [1876, 1160],
+      "id": "19768d7a-de95-4f11-a993-3881f6694490",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dce5816d-5e8b-4e6b-a496-5f389af2a99b",
+              "name": "transcript",
+              "value": "={{ $json.transcript }}",
+              "type": "string"
+            },
+            {
+              "id": "83d3864b-02fb-44d6-baf1-ce1fd24715a7",
+              "name": "userId",
+              "value": "={{ $('ExtractFields').item.json.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "4e286362-91bc-40ef-9e1f-f71fd0500751",
+              "name": "videoUrl",
+              "value": "={{ $('ExtractFields').item.json.videoUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 1260],
+      "id": "a13ff428-3565-4c30-b8e0-380bdd8b5b03",
+      "name": "Combine Payload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "21ecba13-ba5c-4a87-a4a2-004375296cd6",
+              "leftValue": "={{ $('RapidAPI-HTTP Request').item.json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, 1260],
+      "id": "f400e6a0-7a45-4e80-9e68-eca14f71a480",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "errorMessage": "An Error Occured"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [940, 1360],
+      "id": "7d9b3b69-8e0c-496f-8e87-26714441980e",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "useCustomSchema": true,
+        "tableId": "transcripts",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.userId.trim() }}"
+            },
+            {
+              "fieldId": "video_url",
+              "fieldValue": "={{ $json.videoUrl }}"
+            },
+            {
+              "fieldId": "transcript",
+              "fieldValue": "={{ $json.transcript }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [940, 1160],
+      "id": "cd1bd4b5-f320-417b-9943-6ea6f5d8c20b",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Xb7KEkzgEPVJkW9t",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "transcripts",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1160, 1160],
+      "id": "e2540c4d-a165-4a38-b111-9c3ebed95a04",
+      "name": "Supabase1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Xb7KEkzgEPVJkW9t",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [1396, 1160],
+      "id": "29dbaddb-3b9e-4526-b2b2-47c3650c04bb",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Xb7KEkzgEPVJkW9t",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [1380, 1380],
+      "id": "7ffa5c0e-cc96-4446-80bd-967ff91e92ee",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "sVaN8v4g1kQcKrDV",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "userId",
+                "value": "={{ $('Supabase1').item.json.user_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [1500, 1382.5],
+      "id": "9715debd-ae61-4492-93a6-c244560e6166",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [1588, 1580],
+      "id": "71e756fe-c3e9-4551-88d7-5283c62af4ad",
+      "name": "Recursive Character Text Splitter1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-160, 500],
+      "id": "10d43d35-2c8f-4745-b235-8ec90f4a142d",
+      "name": "WebhookExtractor",
+      "webhookId": "f598e56b-e671-47f2-aaf9-7e1bc26acd6b"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File2": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatWebhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT-Webhook": {
+      "main": [
+        [
+          {
+            "node": "ExtractFields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExtractFields": {
+      "main": [
+        [
+          {
+            "node": "RapidAPI-HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RapidAPI-HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Combine Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Payload": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase1": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookExtractor": {
+      "main": [
+        [
+          {
+            "node": "Extract Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8019d6f0-7c30-4c67-8942-7365d38c5fdc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "16f664eb1430b95e439a2f3f5f4c804a38edf6a9201d40438a7ac167249f1cb1"
+  },
+  "id": "j1G9nXfqcAGdzq1v",
+  "tags": []
+}
